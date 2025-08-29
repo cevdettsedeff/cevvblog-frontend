@@ -1,4 +1,4 @@
-// src/components/layout/Navbar.tsx
+// src/components/layout/Navbar.tsx - Favicon eklendi
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,10 +34,26 @@ const Navbar: React.FC = () => {
       <div className="container-custom">
         <div className="flex justify-between items-center h-16">
           
-          {/* Logo */}
+          {/* Logo - Favicon ile */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+            <Link to="/" className="flex items-center space-x-3">
+              <img 
+                src="/favicon.ico" 
+                alt="CevvBlog Logo" 
+                className="w-8 h-8"
+                onError={(e) => {
+                  // Favicon yüklenemezse fallback göster
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              {/* Fallback logo - favicon yüklenmezse görünecek */}
+              <div 
+                className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center"
+                style={{ display: 'none' }}
+              >
                 <span className="text-white font-bold text-lg">C</span>
               </div>
               <span className="text-xl font-bold text-secondary-900">
@@ -116,14 +132,6 @@ const Navbar: React.FC = () => {
                         Yazı Yaz
                       </Link>
                     )}
-                    
-                    <Link
-                      to="/my-posts"
-                      className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      Yazılarım
-                    </Link>
                     
                     <hr className="my-1" />
                     

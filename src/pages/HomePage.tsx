@@ -1,4 +1,4 @@
-// src/pages/HomePage.tsx
+// src/pages/HomePage.tsx - Gerçek API kullanımı (hata yönetimi ile)
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/services/api';
@@ -12,35 +12,68 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Component mount olduğunda verileri yükle
   useEffect(() => {
     const loadHomepageData = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // Backend bağlantısını test etmek için önce basit bir istek yapalım
-        // Gerçek veriler yokken mock data kullanacağız
+        console.log('🔄 Homepage veri yükleme başladı...');
+        console.log('📍 API Base URL:', import.meta.env.VITE_API_BASE_URL);
         
-        // Mock data - gerçek backend bağlantısı kurulduğunda kaldırılacak
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Fake loading
+        // Gerçek API çağrıları - Backend logları çalıştığını gösteriyor
+        console.log('🔄 API çağrıları başlatılıyor...');
         
-        setRecentPosts(mockRecentPosts);
-        setPopularPosts(mockPopularPosts);
-        setCategories(mockCategories);
+        // Posts API'leri çalışıyor
+        const [recentResponse, popularResponse] = await Promise.all([
+          api.posts.getRecent(),
+          api.posts.getPopular()
+        ]);
         
-        // Gerçek API çağrıları (backend hazır olduğunda)
-        // const [recentResponse, popularResponse, categoriesResponse] = await Promise.all([
-        //   api.posts.getRecent(),
-        //   api.posts.getPopular(),
-        //   api.categories.getAll()
-        // ]);
-        // setRecentPosts(recentResponse.data.data);
-        // setPopularPosts(popularResponse.data.data);
-        // setCategories(categoriesResponse.data.data);
+        console.log('✅ Posts responses:', { recent: recentResponse.data, popular: popularResponse.data });
+        
+        // Backend response yapınıza göre
+        const recentData = recentResponse.data?.data || recentResponse.data?.items || recentResponse.data || [];
+        const popularData = popularResponse.data?.data || popularResponse.data?.items || popularResponse.data || [];
+        
+        setRecentPosts(Array.isArray(recentData) ? recentData : []);
+        setPopularPosts(Array.isArray(popularData) ? popularData : []);
+
+        // Categories için aktif kategoriler endpoint'ini kullan (pagination gerektirmez)
+        try {
+          console.log('Categories verisi çekiliyor (aktif kategoriler)...');
+          const categoriesResponse = await api.categories.getActive();
+          console.log('Categories response:', categoriesResponse.data);
+          
+          const categoriesData = categoriesResponse.data?.data || categoriesResponse.data?.items || categoriesResponse.data || [];
+          setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+          
+        } catch (categoriesError: any) {
+          console.error('Categories API hatası:', categoriesError);
+          setCategories([]);
+        }
+
+        console.log('✅ Homepage veri yükleme tamamlandı');
         
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Bir hata oluştu');
-        console.error('Homepage data loading error:', err);
+        console.error('❌ Homepage veri yükleme genel hatası:', err);
+        
+        // Hata türüne göre mesaj belirle
+        let errorMessage = 'Veriler yüklenirken bir hata oluştu.';
+        
+        if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+          errorMessage = 'Backend sunucusuna bağlanılamıyor. Backend\'in çalıştığından emin olun (port 3001).';
+        } else if (err.code === 'ERR_NETWORK') {
+          errorMessage = 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.';
+        } else if (err.response?.status === 404) {
+          errorMessage = 'API endpoint\'i bulunamadı. Backend route\'larını kontrol edin.';
+        } else if (err.response?.status === 500) {
+          errorMessage = 'Sunucu hatası oluştu. Backend log\'larını kontrol edin.';
+        } else if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -51,25 +84,44 @@ const HomePage: React.FC = () => {
 
   // Loading durumu
   if (loading) {
-    return <LoadingSpinner fullScreen text="Sayfa yükleniyor..." />;
+    return <LoadingSpinner fullScreen text="Veriler yükleniyor..." />;
   }
 
-  // Error durumu
+  // Error durumu - daha detaylı
   if (error) {
     return (
       <div className="container-custom py-16 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="bg-error-50 border border-error-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-error-800 mb-2">
+        <div className="max-w-lg mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-red-800 mb-4">
               Bir Hata Oluştu
             </h3>
-            <p className="text-error-600 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="btn-primary"
-            >
-              Tekrar Dene
-            </button>
+            <p className="text-red-600 mb-4">{error}</p>
+            
+            <div className="space-y-2 mb-6 text-sm text-left">
+              <p><strong>Kontrol edilecekler:</strong></p>
+              <ul className="list-disc list-inside text-red-700">
+                <li>Backend sunucusu çalışıyor mu? (http://localhost:3001)</li>
+                <li>API endpoint'leri doğru mu?</li>
+                <li>CORS ayarları yapılmış mı?</li>
+                <li>Database bağlantısı çalışıyor mu?</li>
+              </ul>
+            </div>
+            
+            <div className="space-x-2">
+              <button 
+                onClick={() => window.location.reload()} 
+                className="btn-primary"
+              >
+                Tekrar Dene
+              </button>
+              <a 
+                href="/backend-test" 
+                className="btn-secondary"
+              >
+                API Test Et
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -220,7 +272,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   return (
     <article className="card group cursor-pointer">
-      <Link to={`/post/${post.slug}`}>
+      <Link to={`/post/${post.slug || post.id}`}>
         {post.featuredImage && (
           <div className="aspect-video overflow-hidden rounded-t-xl">
             <img
@@ -232,9 +284,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         )}
         <div className="card-body">
           <div className="flex items-center gap-2 mb-3">
-            <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-md">
-              {post.category.name}
-            </span>
+            {post.category && (
+              <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-md">
+                {post.category.name}
+              </span>
+            )}
             <span className="text-secondary-500 text-sm">
               {formatDate(post.publishedAt || post.createdAt)}
             </span>
@@ -244,28 +298,32 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             {post.title}
           </h3>
           
-          <p className="text-secondary-600 text-sm mb-4 line-clamp-3">
-            {post.excerpt}
-          </p>
+          {post.excerpt && (
+            <p className="text-secondary-600 text-sm mb-4 line-clamp-3">
+              {post.excerpt}
+            </p>
+          )}
           
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-medium">
-                  {post.author.firstName.charAt(0).toUpperCase()}
+                  {post.author?.firstName?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <span className="text-sm text-secondary-600">
-                {post.author.firstName} {post.author.lastName}
+                {post.author?.firstName} {post.author?.lastName}
               </span>
             </div>
-            <div className="flex items-center text-secondary-500 text-sm">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              {post.viewCount}
-            </div>
+            {post.viewCount !== undefined && (
+              <div className="flex items-center text-secondary-500 text-sm">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {post.viewCount}
+              </div>
+            )}
           </div>
         </div>
       </Link>
@@ -286,7 +344,7 @@ const PopularPostCard: React.FC<PopularPostCardProps> = ({ post, rank }) => {
 
   return (
     <article className="card">
-      <Link to={`/post/${post.slug}`} className="block">
+      <Link to={`/post/${post.slug || post.id}`} className="block">
         <div className="card-body">
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0">
@@ -297,9 +355,11 @@ const PopularPostCard: React.FC<PopularPostCardProps> = ({ post, rank }) => {
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-md">
-                  {post.category.name}
-                </span>
+                {post.category && (
+                  <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-md">
+                    {post.category.name}
+                  </span>
+                )}
                 <span className="text-secondary-500 text-xs">
                   {formatDate(post.publishedAt || post.createdAt)}
                 </span>
@@ -309,21 +369,25 @@ const PopularPostCard: React.FC<PopularPostCardProps> = ({ post, rank }) => {
                 {post.title}
               </h3>
               
-              <p className="text-secondary-600 text-sm mb-3 line-clamp-2">
-                {post.excerpt}
-              </p>
+              {post.excerpt && (
+                <p className="text-secondary-600 text-sm mb-3 line-clamp-2">
+                  {post.excerpt}
+                </p>
+              )}
               
               <div className="flex items-center justify-between">
                 <span className="text-sm text-secondary-600">
-                  {post.author.firstName} {post.author.lastName}
+                  {post.author?.firstName} {post.author?.lastName}
                 </span>
-                <div className="flex items-center text-secondary-500 text-sm">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  {post.viewCount}
-                </div>
+                {post.viewCount !== undefined && (
+                  <div className="flex items-center text-secondary-500 text-sm">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    {post.viewCount}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -341,7 +405,7 @@ interface CategoryCardProps {
 const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   return (
     <Link 
-      to={`/category/${category.slug}`}
+      to={`/category/${category.slug || category.id}`}
       className="card group hover:border-primary-300 transition-colors"
     >
       <div className="card-body text-center">
@@ -357,142 +421,5 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
     </Link>
   );
 };
-
-// Mock Data - Backend bağlantısı kurulana kadar
-const mockRecentPosts: Post[] = [
-  {
-    id: '1',
-    title: 'React ile Modern Web Uygulaması Geliştirme',
-    slug: 'react-modern-web-uygulamasi',
-    content: 'React ile modern web uygulamaları geliştirmenin temel prensipleri...',
-    excerpt: 'React kullanarak modern, performanslı web uygulamaları nasıl geliştirilir? Bu yazıda React\'in temel özelliklerini keşfedeceğiz.',
-    featuredImage: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=400&fit=crop',
-    status: 'PUBLISHED' as const,
-    viewCount: 1250,
-    readingTime: 8,
-    publishedAt: '2024-08-10T10:00:00Z',
-    createdAt: '2024-08-10T10:00:00Z',
-    updatedAt: '2024-08-10T10:00:00Z',
-    author: {
-      id: '1',
-      firstName: 'Cevdet',
-      lastName: 'Sedef',
-      email: 'cevdet@example.com',
-      role: 'AUTHOR' as const,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    category: {
-      id: '1',
-      name: 'React',
-      slug: 'react',
-      description: 'React ile ilgili yazılar',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    comments: []
-  },
-  {
-    id: '2',
-    title: 'TypeScript: JavaScript\'in Güçlü Kardeşi',
-    slug: 'typescript-javascript-guclu-kardesi',
-    content: 'TypeScript nedir ve neden kullanmalıyız?',
-    excerpt: 'TypeScript, JavaScript\'e static tip kontrolü ekleyerek daha güvenli kod yazmanızı sağlar. Bu yazıda TypeScript\'in avantajlarını keşfedeceğiz.',
-    featuredImage: 'https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800&h=400&fit=crop',
-    status: 'PUBLISHED' as const,
-    viewCount: 980,
-    readingTime: 6,
-    publishedAt: '2024-08-09T14:30:00Z',
-    createdAt: '2024-08-09T14:30:00Z',
-    updatedAt: '2024-08-09T14:30:00Z',
-    author: {
-      id: '1',
-      firstName: 'Cevdet',
-      lastName: 'Sedef',
-      email: 'cevdet@example.com',
-      role: 'AUTHOR' as const,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    category: {
-      id: '2',
-      name: 'TypeScript',
-      slug: 'typescript',
-      description: 'TypeScript ile ilgili yazılar',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    comments: []
-  },
-  {
-    id: '3',
-    title: 'Node.js ile Backend Geliştirme',
-    slug: 'nodejs-backend-gelistirme',
-    content: 'Node.js ile RESTful API geliştirme rehberi...',
-    excerpt: 'Node.js kullanarak nasıl performanslı backend uygulamaları geliştirebilirsiniz? Bu rehberde temel konuları ele alacağız.',
-    featuredImage: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&h=400&fit=crop',
-    status: 'PUBLISHED' as const,
-    viewCount: 750,
-    readingTime: 10,
-    publishedAt: '2024-08-08T09:15:00Z',
-    createdAt: '2024-08-08T09:15:00Z',
-    updatedAt: '2024-08-08T09:15:00Z',
-    author: {
-      id: '1',
-      firstName: 'Cevdet',
-      lastName: 'Sedef',
-      email: 'cevdet@example.com',
-      role: 'AUTHOR' as const,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    category: {
-      id: '3',
-      name: 'Node.js',
-      slug: 'nodejs',
-      description: 'Node.js ile ilgili yazılar',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    comments: []
-  }
-];
-
-const mockPopularPosts: Post[] = mockRecentPosts;
-
-const mockCategories: Category[] = [
-  {
-    id: '1',
-    name: 'React',
-    slug: 'react',
-    description: 'React ile ilgili yazılar',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'TypeScript',
-    slug: 'typescript',
-    description: 'TypeScript ile ilgili yazılar',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '3',
-    name: 'Node.js',
-    slug: 'nodejs',
-    description: 'Node.js ile ilgili yazılar',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '4',
-    name: 'JavaScript',
-    slug: 'javascript',
-    description: 'JavaScript ile ilgili yazılar',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  }
-];
 
 export default HomePage;

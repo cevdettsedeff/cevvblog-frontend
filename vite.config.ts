@@ -21,13 +21,13 @@ export default defineConfig({
 
   // Development server settings
   server: {
-    port: 3000,
+    port: 3001,
     open: true, // Otomatik browser açma
     
     // Backend proxy - CORS sorunlarını önlemek için
     proxy: {
       '/api': {
-        target: 'http://localhost:3001', // Backend port'unuz (muhtemelen 3001)
+        target: 'http://localhost:3000', // Backend port'unuz (muhtemelen 3000)
         changeOrigin: true,
         secure: false,
       },

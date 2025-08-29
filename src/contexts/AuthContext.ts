@@ -1,17 +1,23 @@
-// src/contexts/AuthContext.tsx
+// src/contexts/AuthContext.tsx - TypeScript hataları düzeltildi
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, AuthContextType, RegisterRequest } from '@/types';
-import { api } from '@/services/api';
+import apiClient, { api } from '@/services/api';
+import { RegisterRequest, User } from '@/types';
 
-// Context oluştur
-const AuthContext = createContext<AuthContextType | null>(null);
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+}
 
-// Props interface
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// AuthProvider component - tüm uygulamayı saracak
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(
@@ -19,25 +25,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   );
   const [loading, setLoading] = useState(true);
 
-  // Sayfa yüklendiğinde kullanıcı bilgilerini al
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
       
       if (storedToken) {
         try {
-          const response = await api.auth.getProfile();
-          setUser(response.data.data);
-          setToken(storedToken);
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           
-          // Development'ta user bilgisini logla
-          if (import.meta.env.DEV) {
-            console.log('👤 User loaded:', response.data.data);
+          const response = await api.auth.getProfile();
+          
+          if (response.data) {
+            const userData = response.data?.data || response.data;
+            setUser(userData);
+            setToken(storedToken);
+            console.log('Token doğrulandı:', userData);
+          } else {
+            throw new Error('Invalid user response');
           }
         } catch (error) {
-          // Token geçersizse temizle
-          console.warn('Token geçersiz, temizleniyor...');
+          console.warn('Token geçersiz, temizleniyor...', error);
           localStorage.removeItem('token');
+          delete apiClient.defaults.headers.common['Authorization'];
           setToken(null);
           setUser(null);
         }
@@ -49,92 +58,86 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initAuth();
   }, []);
 
-  // Login fonksiyonu
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      // Demo login - Backend hazır olana kadar
-      if (email === 'demo@cevvblog.com' && password === 'demo123') {
-        const demoUser: User = {
-          id: 'demo-user-1',
-          email: 'demo@cevvblog.com',
-          firstName: 'Demo',
-          lastName: 'Kullanıcı',
-          role: 'AUTHOR',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        };
-        
-        const demoToken = 'demo-jwt-token-12345';
-        
-        setUser(demoUser);
-        setToken(demoToken);
-        localStorage.setItem('token', demoToken);
-        
-        if (import.meta.env.DEV) {
-          console.log('✅ Demo Login successful:', demoUser);
-        }
-        return;
+      const response = await api.auth.login(email, password);
+      
+      const authData = response.data?.data || response.data;
+      
+      if (!authData || !authData.token || !authData.user) {
+        throw new Error('Invalid login response');
       }
       
-      // Gerçek API çağrısı (backend hazır olduğunda)
-      const response = await api.auth.login(email, password);
-      const { user: userData, token: userToken } = response.data.data;
+      const { user: userData, token: userToken } = authData;
       
-      // State'i güncelle
+      localStorage.setItem('token', userToken);
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
+      
       setUser(userData);
       setToken(userToken);
       
-      // LocalStorage'a kaydet
-      localStorage.setItem('token', userToken);
-      
-      // Development'ta başarılı login'i logla
-      if (import.meta.env.DEV) {
-        console.log('✅ Login successful:', userData);
-      }
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 'Giriş yapılamadı'
-      );
+      let errorMessage = 'Giriş yapılamadı';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'E-posta veya şifre hatalı';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Hesabınız deaktive edilmiş';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 
-  // Register fonksiyonu
   const register = async (userData: RegisterRequest): Promise<void> => {
     try {
       const response = await api.auth.register(userData);
-      const { user: newUser, token: userToken } = response.data.data;
       
-      // State'i güncelle
+      const authData = response.data?.data || response.data;
+      
+      if (!authData || !authData.token || !authData.user) {
+        throw new Error('Invalid register response');
+      }
+      
+      const { user: newUser, token: userToken } = authData;
+      
+      localStorage.setItem('token', userToken);
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
+      
       setUser(newUser);
       setToken(userToken);
       
-      // LocalStorage'a kaydet
-      localStorage.setItem('token', userToken);
-      
-      // Development'ta başarılı register'ı logla
-      if (import.meta.env.DEV) {
-        console.log('✅ Register successful:', newUser);
-      }
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 'Kayıt olunamadı'
-      );
+      let errorMessage = 'Kayıt olunamadı';
+      
+      if (error.response?.status === 409) {
+        const conflictData = error.response?.data;
+        if (conflictData?.details?.email) {
+          errorMessage = 'E-posta zaten kullanılıyor';
+        } else if (conflictData?.details?.username) {
+          errorMessage = 'Kullanıcı adı zaten kullanılıyor';
+        }
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 
-  // Logout fonksiyonu
   const logout = (): void => {
+    localStorage.removeItem('token');
+    delete apiClient.defaults.headers.common['Authorization'];
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
-    
-    // Development'ta logout'u logla
-    if (import.meta.env.DEV) {
-      console.log('👋 User logged out');
-    }
   };
 
-  // Context value
   const value: AuthContextType = {
     user,
     token,
@@ -144,20 +147,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
   };
 
-  // Alternative: React.createElement syntax
   return React.createElement(
     AuthContext.Provider,
-    { value: value },
+    { value },
     children
   );
 };
 
-// Custom hook - Context'i kullanmak için
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   
-  if (!context) {
-    throw new Error('useAuth hook AuthProvider içinde kullanılmalıdır');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   
   return context;

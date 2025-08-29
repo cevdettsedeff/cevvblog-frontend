@@ -1,4 +1,3 @@
-// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -8,6 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 
 // Pages
 import HomePage from '@/pages/HomePage';
+import PostDetailPage from '@/pages/posts/PostDetailPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 
@@ -30,13 +30,16 @@ const App: React.FC = () => {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
+              
+              {/* Post Routes */}
+              <Route path="/post/:slug" element={<PostDetailPage />} />
+              <Route path="/posts/:slug" element={<PostDetailPage />} />
+              
+              {/* Auth Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               
-              {/* Test Route - Geliştirme aşamasında */}
-              <Route path="/test" element={<TestPage />} />
-              
-              {/* Protected Routes - Daha sonra ekleyeceğiz */}
+              {/* Protected Routes */}
               <Route 
                 path="/profile" 
                 element={
@@ -48,7 +51,7 @@ const App: React.FC = () => {
                 } 
               />
               
-              {/* Author Routes - Daha sonra ekleyeceğiz */}
+              {/* Author Routes */}
               <Route 
                 path="/create-post" 
                 element={
@@ -65,7 +68,7 @@ const App: React.FC = () => {
             </Routes>
           </main>
           
-          {/* Footer - Daha sonra ekleyeceğiz */}
+          {/* Footer */}
           <footer className="bg-secondary-900 text-white py-4">
             <div className="container-custom text-center">
               <p>&copy; 2024 CevvBlog. Tüm hakları saklıdır.</p>
@@ -74,36 +77,6 @@ const App: React.FC = () => {
         </div>
       </Router>
     </AuthProvider>
-  );
-};
-
-// Test sayfası - Geliştirme aşamasında bağlantıları test etmek için
-const TestPage: React.FC = () => {
-  return (
-    <div className="container-custom py-8">
-      <h1 className="text-3xl font-bold mb-6">Test Sayfası</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card">
-          <div className="card-body">
-            <h3 className="text-lg font-semibold mb-2">API Test</h3>
-            <p className="text-secondary-600">
-              Backend bağlantısını test etmek için bu sayfayı kullanabilirsiniz.
-            </p>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="card-body">
-            <h3 className="text-lg font-semibold mb-2">Bileşen Test</h3>
-            <div className="space-y-2">
-              <button className="btn-primary">Primary Button</button>
-              <button className="btn-secondary">Secondary Button</button>
-              <button className="btn-outline">Outline Button</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
 

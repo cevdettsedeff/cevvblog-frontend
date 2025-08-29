@@ -1,19 +1,20 @@
 // src/types/index.ts
 
-// User tipleri
+// User tipleri - Backend DTO'ya uygun
 export interface User {
   id: string;
   email: string;
+  username: string; // Backend'de var
   firstName: string;
   lastName: string;
-  role: 'USER' | 'AUTHOR' | 'ADMIN';
+  role: string; // Backend'de string olarak geliyor
   avatar?: string;
   bio?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Auth tipleri
+// Auth tipleri - Backend DTO'ya uygun
 export interface LoginRequest {
   email: string;
   password: string;
@@ -21,9 +22,10 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   email: string;
-  password: string;
+  username: string; // Backend'de zorunlu
   firstName: string;
   lastName: string;
+  password: string;
 }
 
 export interface AuthResponse {
@@ -51,9 +53,10 @@ export interface Post {
   excerpt: string;
   featuredImage?: string;
   images?: string[];
+  tags?: string[]; // Tags field'i eklendi
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   viewCount: number;
-  readingTime: number;
+  readingTime?: number; // Optional yapıldı
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -131,4 +134,10 @@ export interface CommentProps {
   onDelete?: (id: string) => void;
   canEdit?: boolean;
   canDelete?: boolean;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
 }

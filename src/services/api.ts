@@ -1,16 +1,14 @@
+// src/services/api.ts - Categories endpoint'i düzeltilmiş
 import axios from 'axios';
 
-// Vite environment variables - VITE_ prefix zorunlu
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const IS_DEV = import.meta.env.DEV;
 
-// Axios instance oluşturuyoruz - tüm HTTP istekleri için
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  // CORS için
   withCredentials: true,
 });
 
@@ -21,9 +19,8 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   
-  // Development'ta request'leri logla
   if (IS_DEV) {
-    console.log('🚀 API Request:', config.method?.toUpperCase(), config.url, config.data);
+    console.log('🚀 API Request:', config.method?.toUpperCase(), config.url, config.params, config.data);
   }
   
   return config;
@@ -32,20 +29,17 @@ apiClient.interceptors.request.use((config) => {
 // Response interceptor - hata yönetimi
 apiClient.interceptors.response.use(
   (response) => {
-    // Development'ta response'ları logla
     if (IS_DEV) {
       console.log('✅ API Response:', response.config.url, response.data);
     }
     return response;
   },
   (error) => {
-    // Development'ta hataları logla
     if (IS_DEV) {
       console.error('❌ API Error:', error.response?.data || error.message);
     }
     
     if (error.response?.status === 401) {
-      // Token geçersizse kullanıcıyı çıkar
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -53,7 +47,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-// API fonksiyonları
 export const api = {
   // Auth endpoints
   auth: {
@@ -82,9 +75,12 @@ export const api = {
     
     getBySlug: (slug: string) => apiClient.get(`/posts/slug/${slug}`),
     
-    getPopular: () => apiClient.get('/posts/popular'),
+    // Backend'inizde bu endpoint'ler çalışıyor
+    getPopular: (params?: { page?: number; limit?: number }) => 
+      apiClient.get('/posts/popular', { params }),
     
-    getRecent: () => apiClient.get('/posts/recent'),
+    getRecent: (params?: { page?: number; limit?: number }) => 
+      apiClient.get('/posts/recent', { params }),
     
     search: (query: string) => 
       apiClient.get('/posts/search', { params: { q: query } }),
@@ -104,7 +100,16 @@ export const api = {
 
   // Categories endpoints
   categories: {
-    getAll: () => apiClient.get('/categories'),
+    // Tüm kategoriler (pagination ile)
+    getAll: (params?: {
+      page?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }) => apiClient.get('/categories', { params }),
+    
+    // Aktif kategoriler (navbar için - pagination yok)
+    getActive: () => apiClient.get('/categories/active'),
     
     create: (categoryData: { name: string; description?: string }) =>
       apiClient.post('/categories', categoryData),
