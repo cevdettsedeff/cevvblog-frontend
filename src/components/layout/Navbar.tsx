@@ -1,33 +1,46 @@
-// src/components/layout/Navbar.tsx - Favicon eklendi
+// src/components/layout/Navbar.tsx
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Menu, X, ChevronDown, User, Settings, LogOut, PlusCircle, BarChart3 } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-    setIsProfileDropdownOpen(false);
-  };
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   // Aktif link kontrolü
   const isActiveLink = (path: string) => {
-    return location.pathname === path;
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
   };
 
-  const linkClasses = (path: string) => `
-    px-3 py-2 rounded-md text-sm font-medium transition-colors
-    ${isActiveLink(path) 
-      ? 'bg-primary-100 text-primary-700' 
-      : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
+  // Link stil sınıfları
+  const linkClasses = (path: string) => {
+    const baseClasses = 'px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
+    return `${baseClasses} ${
+      isActiveLink(path)
+        ? 'bg-primary-100 text-primary-700' 
+        : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
+    }`;
+  };
+
+  // Logout işlemi
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/', { replace: true });
+      setIsUserMenuOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
     }
-  `;
+  };
+
+  // Kullanıcının yazar yetkisi var mı?
+  const isAuthor = user?.role === 'AUTHOR' || user?.role === 'ADMIN';
 
   return (
     <nav className="bg-white shadow-sm border-b sticky top-0 z-40">
@@ -88,73 +101,118 @@ const Navbar: React.FC = () => {
           {/* User Menu / Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <div className="relative">
-                {/* User dropdown button */}
-                <button
-                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-secondary-100 transition-colors"
-                >
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {user.firstName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium text-secondary-700">
-                    {user.firstName}
-                  </span>
-                  <svg 
-                    className="w-4 h-4 text-secondary-600" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Dropdown menu */}
-                {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
+              <div className="flex items-center space-x-3">
+                
+                {/* Author Controls */}
+                {isAuthor && (
+                  <div className="flex items-center space-x-2">
                     <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100"
-                      onClick={() => setIsProfileDropdownOpen(false)}
+                      to="/create-post"
+                      className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors"
                     >
-                      Profil
+                      <PlusCircle className="w-4 h-4" />
+                      <span>Yeni Yazı</span>
                     </Link>
                     
-                    {(user.role === 'AUTHOR' || user.role === 'ADMIN') && (
-                      <Link
-                        to="/create-post"
-                        className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100"
-                        onClick={() => setIsProfileDropdownOpen(false)}
-                      >
-                        Yazı Yaz
-                      </Link>
-                    )}
-                    
-                    <hr className="my-1" />
-                    
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-error-50"
+                    <Link
+                      to="/author-dashboard"
+                      className="p-2 text-secondary-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                      title="Yazar Paneli"
                     >
-                      Çıkış Yap
-                    </button>
+                      <BarChart3 className="w-5 h-5" />
+                    </Link>
                   </div>
                 )}
+
+                {/* User Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-secondary-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {user.firstName?.[0]?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-secondary-700">
+                      {user.firstName}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-secondary-400 transition-transform ${
+                      isUserMenuOpen ? 'rotate-180' : ''
+                    }`} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-secondary-200 py-2 z-50">
+                      <div className="px-4 py-2 border-b border-secondary-200">
+                        <p className="text-sm font-medium text-secondary-900">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-xs text-secondary-500">{user.email}</p>
+                        {user.role && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <span className="text-xs px-2 py-1 bg-primary-100 text-primary-700 rounded">
+                              {user.role}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Link
+                        to="/profile"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <User className="w-4 h-4" />
+                        <span>Profil</span>
+                      </Link>
+
+                      {isAuthor && (
+                        <Link
+                          to="/author-dashboard"
+                          className="flex items-center space-x-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                          <span>Yazar Paneli</span>
+                        </Link>
+                      )}
+                      
+                      <Link
+                        to="/settings"
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>Ayarlar</span>
+                      </Link>
+                      
+                      <div className="border-t border-secondary-200 mt-2 pt-2">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Çıkış Yap</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className="text-secondary-600 hover:text-secondary-900 px-3 py-2 text-sm font-medium"
+                  className="px-4 py-2 text-sm font-medium text-secondary-700 hover:text-secondary-900 transition-colors"
                 >
                   Giriş Yap
                 </Link>
                 <Link
                   to="/register"
-                  className="btn-primary btn-sm"
+                  className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   Kayıt Ol
                 </Link>
@@ -162,116 +220,166 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-lg text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 transition-colors"
             >
-              <svg 
-                className="w-6 h-6" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t bg-white">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link
-                to="/"
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActiveLink('/') 
-                    ? 'bg-primary-100 text-primary-700' 
-                    : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-secondary-200 py-4">
+            <div className="space-y-2">
+              <Link 
+                to="/" 
+                className={linkClasses('/')}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Ana Sayfa
               </Link>
               
-              <Link
-                to="/posts"
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActiveLink('/posts') 
-                    ? 'bg-primary-100 text-primary-700' 
-                    : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
+              <Link 
+                to="/posts" 
+                className={linkClasses('/posts')}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Blog
               </Link>
               
-              {user ? (
-                <div className="border-t pt-4 mt-4">
-                  <div className="flex items-center px-3 py-2">
-                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-white text-sm font-medium">
-                        {user.firstName.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="text-base font-medium text-secondary-900">
-                      {user.firstName} {user.lastName}
+              <Link 
+                to="/categories" 
+                className={linkClasses('/categories')}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Kategoriler
+              </Link>
+              
+              <Link 
+                to="/about" 
+                className={linkClasses('/about')}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Hakkında
+              </Link>
+              
+              <Link 
+                to="/contact" 
+                className={linkClasses('/contact')}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                İletişim
+              </Link>
+            </div>
+
+            {/* Mobile User Menu */}
+            {user ? (
+              <div className="border-t border-secondary-200 mt-4 pt-4">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-medium">
+                      {user.firstName?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
-                  
-                  <Link
-                    to="/profile"
-                    className="block px-3 py-2 rounded-md text-base text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Profil
-                  </Link>
-                  
-                  {(user.role === 'AUTHOR' || user.role === 'ADMIN') && (
+                  <div>
+                    <p className="font-medium text-secondary-900">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-sm text-secondary-500">{user.email}</p>
+                  </div>
+                </div>
+
+                {/* Author Controls Mobile */}
+                {isAuthor && (
+                  <div className="space-y-2 mb-4">
                     <Link
                       to="/create-post"
-                      className="block px-3 py-2 rounded-md text-base text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100"
-                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center space-x-2 w-full bg-primary-600 text-white px-4 py-3 rounded-lg font-medium"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Yazı Yaz
+                      <PlusCircle className="w-5 h-5" />
+                      <span>Yeni Yazı</span>
                     </Link>
-                  )}
+                    
+                    <Link
+                      to="/author-dashboard"
+                      className="flex items-center space-x-2 w-full px-4 py-3 text-secondary-700 hover:bg-secondary-100 rounded-lg"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <BarChart3 className="w-5 h-5" />
+                      <span>Yazar Paneli</span>
+                    </Link>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Link
+                    to="/profile"
+                    className="flex items-center space-x-2 px-4 py-3 text-secondary-700 hover:bg-secondary-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="w-5 h-5" />
+                    <span>Profil</span>
+                  </Link>
+                  
+                  <Link
+                    to="/settings"
+                    className="flex items-center space-x-2 px-4 py-3 text-secondary-700 hover:bg-secondary-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span>Ayarlar</span>
+                  </Link>
                   
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base text-error-600 hover:bg-error-50"
+                    className="flex items-center space-x-2 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg text-left"
                   >
-                    Çıkış Yap
+                    <LogOut className="w-5 h-5" />
+                    <span>Çıkış Yap</span>
                   </button>
                 </div>
-              ) : (
-                <div className="border-t pt-4 mt-4 space-y-1">
-                  <Link
-                    to="/login"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Giriş Yap
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block px-3 py-2 rounded-md text-base font-medium bg-primary-600 text-white"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Kayıt Ol
-                  </Link>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="border-t border-secondary-200 mt-4 pt-4 space-y-2">
+                <Link
+                  to="/login"
+                  className="block w-full px-4 py-3 text-center text-secondary-700 border border-secondary-300 rounded-lg hover:bg-secondary-50 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Giriş Yap
+                </Link>
+                <Link
+                  to="/register"
+                  className="block w-full px-4 py-3 text-center bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Kayıt Ol
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
+      
+      {/* Backdrop for closing dropdowns */}
+      {(isUserMenuOpen || isMobileMenuOpen) && (
+        <div 
+          className="fixed inset-0 z-30" 
+          onClick={() => {
+            setIsUserMenuOpen(false);
+            setIsMobileMenuOpen(false);
+          }}
+        />
+      )}
     </nav>
   );
 };
