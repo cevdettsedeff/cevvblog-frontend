@@ -1,6 +1,6 @@
 // src/pages/ContactPage.tsx
 import React, { useState } from 'react';
-import { Mail, MapPin, Phone, Send, MessageCircle } from 'lucide-react';
+import { Mail, MapPin, Phone, Send, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +12,41 @@ const ContactPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  
+  // FAQ Accordion için state
+  const [openFAQIndex, setOpenFAQIndex] = useState<number | null>(null);
+
+  // FAQ verileri
+  const faqs = [
+    {
+      question: "Ne kadar sürede geri dönüş yaparsınız?",
+      answer: "Genellikle 24 saat içerisinde e-posta mesajlarına yanıt vermeye çalışırız. Acil durumlar için telefon numaramızı kullanabilirsiniz."
+    },
+    {
+      question: "Blog yazarı olmak istiyorum, nasıl başvururum?",
+      answer: "Yazar olmak için editor@cevvblog.com adresine özgeçmişiniz ve örnek yazılarınızla birlikte başvurabilirsiniz."
+    },
+    {
+      question: "Reklam ve sponsorluk nasıl yapılır?",
+      answer: "İş birliği teklifleri için partnership@cevvblog.com adresinden bizimle iletişime geçebilirsiniz."
+    },
+    {
+      question: "Teknik bir sorun yaşıyorum, ne yapmalıyım?",
+      answer: "Teknik sorunlar için support@cevvblog.com adresine detaylı bir açıklama ile yazabilirsiniz."
+    },
+    {
+      question: "Blog içeriklerini başka yerde kullanabilir miyim?",
+      answer: "İçeriklerimiz telif hakkı ile korunmaktadır. Kaynak göstererek kısa alıntılar yapabilirsiniz, ancak tam makale paylaşımları için izin almanız gerekmektedir."
+    },
+    {
+      question: "Hangi konularda yazı kabul ediyorsunuz?",
+      answer: "Teknoloji, yaşam tarzı, kişisel gelişim, seyahat, yemek ve kültür konularında kaliteli içerikleri değerlendiriyoruz."
+    }
+  ];
+
+  const toggleFAQ = (index: number) => {
+    setOpenFAQIndex(openFAQIndex === index ? null : index);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -101,87 +136,108 @@ const ContactPage: React.FC = () => {
           
           {/* İletişim Bilgileri */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-8">
-              <h2 className="text-2xl font-bold text-secondary-900 mb-6">
-                İletişim Bilgileri
-              </h2>
+            <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-8 hover:shadow-md transition-shadow duration-300">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-secondary-900 mb-2">
+                  İletişim Bilgileri
+                </h2>
+                <p className="text-secondary-600 text-sm">
+                  Size en uygun iletişim yolunu seçin
+                </p>
+              </div>
               
               <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <Mail className="w-6 h-6 text-primary-600" />
+                <div className="group p-4 rounded-lg hover:bg-primary-50 transition-all duration-300 cursor-pointer border border-transparent hover:border-primary-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center group-hover:from-primary-200 group-hover:to-primary-300 transition-all duration-300">
+                        <Mail className="w-6 h-6 text-blue-600 group-hover:text-primary-700 transition-colors duration-300" />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-secondary-900 mb-1">E-posta</h3>
-                    <p className="text-secondary-600">info@cevvblog.com</p>
-                    <p className="text-secondary-600">editor@cevvblog.com</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-secondary-900 mb-2 group-hover:text-primary-800 transition-colors duration-300">E-posta</h3>
+                      <div className="space-y-1">
+                        <a href="mailto:info@cevvblog.com" className="block text-secondary-600 hover:text-primary-600 transition-colors duration-200 text-sm">
+                          info@cevvblog.com
+                        </a>
+                        <a href="mailto:editor@cevvblog.com" className="block text-secondary-600 hover:text-primary-600 transition-colors duration-200 text-sm">
+                          editor@cevvblog.com
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <Phone className="w-6 h-6 text-primary-600" />
+                <div className="group p-4 rounded-lg hover:bg-green-50 transition-all duration-300 cursor-pointer border border-transparent hover:border-green-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center group-hover:from-green-200 group-hover:to-green-300 transition-all duration-300">
+                        <Phone className="w-6 h-6 text-green-600 group-hover:text-green-700 transition-colors duration-300" />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-secondary-900 mb-1">Telefon</h3>
-                    <p className="text-secondary-600">+90 (212) 555 0123</p>
-                    <p className="text-sm text-secondary-500">Pazartesi - Cuma, 09:00 - 18:00</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-secondary-900 mb-2 group-hover:text-green-800 transition-colors duration-300">Telefon</h3>
+                      <a href="tel:+902125550123" className="block text-secondary-600 hover:text-green-600 transition-colors duration-200 font-medium">
+                        +90 (212) 555 0123
+                      </a>
+                      <p className="text-xs text-secondary-500 mt-1 bg-secondary-100 px-2 py-1 rounded-full inline-block">
+                        Pazartesi - Cuma, 09:00 - 18:00
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <MapPin className="w-6 h-6 text-primary-600" />
+                <div className="group p-4 rounded-lg hover:bg-purple-50 transition-all duration-300 cursor-pointer border border-transparent hover:border-purple-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center group-hover:from-purple-200 group-hover:to-purple-300 transition-all duration-300">
+                        <MapPin className="w-6 h-6 text-purple-600 group-hover:text-purple-700 transition-colors duration-300" />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-secondary-900 mb-1">Adres</h3>
-                    <p className="text-secondary-600">
-                      Beşiktaş, İstanbul<br />
-                      Türkiye
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-secondary-900 mb-2 group-hover:text-purple-800 transition-colors duration-300">Konum</h3>
+                      <p className="text-secondary-600 leading-relaxed">
+                        Beşiktaş, İstanbul<br />
+                        <span className="text-secondary-500">Türkiye</span>
+                      </p>
+                      <button className="mt-2 text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-1 group-hover:underline">
+                        <span>Haritada Görüntüle</span>
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <MessageCircle className="w-6 h-6 text-primary-600" />
+                <div className="group p-4 rounded-lg hover:bg-indigo-50 transition-all duration-300 cursor-pointer border border-transparent hover:border-indigo-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-lg flex items-center justify-center group-hover:from-indigo-200 group-hover:to-indigo-300 transition-all duration-300">
+                        <MessageCircle className="w-6 h-6 text-indigo-600 group-hover:text-indigo-700 transition-colors duration-300" />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-secondary-900 mb-1">Sosyal Medya</h3>
-                    <div className="space-y-1">
-                      <p className="text-secondary-600">Twitter: @cevvblog</p>
-                      <p className="text-secondary-600">LinkedIn: /company/cevvblog</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-secondary-900 mb-2 group-hover:text-indigo-800 transition-colors duration-300">Sosyal Medya</h3>
+                      <div className="space-y-2">
+                        <a href="https://twitter.com/cevvblog" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-secondary-600 hover:text-indigo-600 transition-colors duration-200 text-sm">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span>Twitter: @cevvblog</span>
+                        </a>
+                        <a href="https://linkedin.com/company/cevvblog" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 text-secondary-600 hover:text-indigo-600 transition-colors duration-200 text-sm">
+                          <span className="w-2 h-2 bg-blue-700 rounded-full"></span>
+                          <span>LinkedIn: /company/cevvblog</span>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Hızlı İletişim Konuları */}
-              <div className="mt-8 pt-8 border-t border-secondary-200">
-                <h3 className="font-semibold text-secondary-900 mb-4">Hızlı İletişim</h3>
-                <div className="space-y-2">
-                  <div className="text-sm">
-                    <span className="font-medium text-secondary-700">Editörlük:</span>
-                    <span className="text-secondary-600 ml-1">editor@cevvblog.com</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium text-secondary-700">İş Birliği:</span>
-                    <span className="text-secondary-600 ml-1">partnership@cevvblog.com</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium text-secondary-700">Teknik Destek:</span>
-                    <span className="text-secondary-600 ml-1">support@cevvblog.com</span>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
 
@@ -322,52 +378,73 @@ const ContactPage: React.FC = () => {
           </div>
         </div>
 
-        {/* SSS Bölümü */}
+        {/* Yeni Modern FAQ Accordion Bölümü */}
         <div className="mt-16">
           <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-8">
             <h2 className="text-2xl font-bold text-secondary-900 mb-8 text-center">
               Sıkça Sorulan Sorular
             </h2>
             
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="font-semibold text-secondary-900 mb-2">
-                  Ne kadar sürede geri dönüş yaparsınız?
-                </h3>
-                <p className="text-secondary-600 text-sm">
-                  Genellikle 24 saat içerisinde e-posta mesajlarına yanıt vermeye çalışırız. 
-                  Acil durumlar için telefon numaramızı kullanabilirsiniz.
-                </p>
-              </div>
+            <div className="space-y-4">
+              {faqs.map((faq, index) => (
+                <div
+                  key={index}
+                  className="border border-secondary-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md"
+                >
+                  <button
+                    onClick={() => toggleFAQ(index)}
+                    className="w-full px-6 py-4 text-left flex justify-between items-center bg-white hover:bg-secondary-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
+                  >
+                    <h3 className="text-lg font-semibold text-secondary-900 pr-4">
+                      {faq.question}
+                    </h3>
+                    <div className="flex-shrink-0">
+                      {openFAQIndex === index ? (
+                        <ChevronUp className="w-5 h-5 text-primary-600 transition-transform duration-200" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-secondary-400 transition-transform duration-200" />
+                      )}
+                    </div>
+                  </button>
+                  
+                  <div
+                    className={`px-6 bg-secondary-50 transition-all duration-300 ease-in-out ${
+                      openFAQIndex === index
+                        ? 'py-4 opacity-100 max-h-96'
+                        : 'py-0 opacity-0 max-h-0'
+                    }`}
+                  >
+                    <div className={`transition-all duration-300 ${openFAQIndex === index ? 'translate-y-0' : '-translate-y-2'}`}>
+                      <p className="text-secondary-700 leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-              <div>
-                <h3 className="font-semibold text-secondary-900 mb-2">
-                  Blog yazarı olmak istiyorum, nasıl başvururum?
-                </h3>
-                <p className="text-secondary-600 text-sm">
-                  Yazar olmak için editor@cevvblog.com adresine özgeçmişiniz ve 
-                  örnek yazılarınızla birlikte başvurabilirsiniz.
+            {/* Alt kısım - İlave bilgi */}
+            <div className="mt-8 pt-6 border-t border-secondary-200">
+              <div className="text-center">
+                <p className="text-secondary-600 text-sm mb-3">
+                  Sorunuzun cevabını bulamadınız mı?
                 </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-secondary-900 mb-2">
-                  Reklam ve sponsorluk nasıl yapılır?
-                </h3>
-                <p className="text-secondary-600 text-sm">
-                  İş birliği teklifleri için partnership@cevvblog.com adresinden 
-                  bizimle iletişime geçebilirsiniz.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-secondary-900 mb-2">
-                  Teknik bir sorun yaşıyorum, ne yapmalıyım?
-                </h3>
-                <p className="text-secondary-600 text-sm">
-                  Teknik sorunlar için support@cevvblog.com adresine detaylı bir 
-                  açıklama ile yazabilirsiniz.
-                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                  <a
+                    href="mailto:info@cevvblog.com"
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors duration-200"
+                  >
+                    Bizimle İletişime Geçin
+                  </a>
+                  <span className="text-secondary-400 text-sm">veya</span>
+                  <a
+                    href="tel:+902125550123"
+                    className="inline-flex items-center px-4 py-2 border border-secondary-300 text-secondary-700 text-sm font-medium rounded-lg hover:bg-secondary-50 transition-colors duration-200"
+                  >
+                    Bizi Arayın
+                  </a>
+                </div>
               </div>
             </div>
           </div>
