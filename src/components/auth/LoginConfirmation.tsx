@@ -29,7 +29,7 @@ const LogoutConfirmation: React.FC<LogoutConfirmationProps> = ({
       setTimeout(() => {
         setShowSuccess(false);
         onClose();
-        navigate('/login');
+        navigate('/');
         onConfirm?.();
       }, 1500);
       
