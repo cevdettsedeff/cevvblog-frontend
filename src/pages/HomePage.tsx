@@ -18,64 +18,71 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     const loadHomepageData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  try {
+    setLoading(true);
+    setError(null);
 
-        console.log("🔄 Homepage veri yükleme başladı...");
-        console.log("📍 API Base URL:", import.meta.env.VITE_API_BASE_URL);
+    console.log("🔄 Homepage veri yükleme başladı...");
+    console.log("📍 API Base URL:", import.meta.env.VITE_API_BASE_URL);
 
-        const [recentResponse, popularResponse] = await Promise.all([
-          api.posts.getRecent(),
-          api.posts.getPopular(),
-        ]);
+    // Paralel olarak posts ve kategorileri yükle
+    const [recentResponse, popularResponse, categoriesResponse] = await Promise.all([
+      api.posts.getRecent(),
+      api.posts.getPopular(),
+      api.categories.getActive(), // Sadece aktif kategorileri al
+    ]);
 
-        const recentData =
-          recentResponse.data?.data ||
-          recentResponse.data?.items ||
-          recentResponse.data ||
-          [];
-        const popularData =
-          popularResponse.data?.data ||
-          popularResponse.data?.items ||
-          popularResponse.data ||
-          [];
+    // Posts verilerini işle
+    const recentData =
+      recentResponse.data?.data ||
+      recentResponse.data?.items ||
+      recentResponse.data ||
+      [];
+    const popularData =
+      popularResponse.data?.data ||
+      popularResponse.data?.items ||
+      popularResponse.data ||
+      [];
 
-        setRecentPosts(Array.isArray(recentData) ? recentData : []);
-        setPopularPosts(Array.isArray(popularData) ? popularData : []);
-        setSliderPosts(Array.isArray(recentData) ? recentData.slice(0, 5) : []);
+    setRecentPosts(Array.isArray(recentData) ? recentData : []);
+    setPopularPosts(Array.isArray(popularData) ? popularData : []);
+    setSliderPosts(Array.isArray(recentData) ? recentData.slice(0, 5) : []);
 
-        try {
-          const categoriesResponse = await api.categories.getActive();
-          const categoriesData =
-            categoriesResponse.data?.data ||
-            categoriesResponse.data?.items ||
-            categoriesResponse.data ||
-            [];
-          setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        } catch (categoriesError: any) {
-          console.error("Categories API hatası:", categoriesError);
-          setCategories([]);
-        }
-      } catch (err: any) {
-        console.error("❌ Homepage veri yükleme genel hatası:", err);
-        let errorMessage = "Veriler yüklenirken bir hata oluştu.";
-        if (err.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED")) {
-          errorMessage = "Backend sunucusuna bağlanılamıyor.";
-        } else if (err.code === "ERR_NETWORK") {
-          errorMessage = "Ağ bağlantısı hatası.";
-        } else if (err.response?.status === 404) {
-          errorMessage = "API endpoint'i bulunamadı.";
-        } else if (err.response?.status === 500) {
-          errorMessage = "Sunucu hatası oluştu.";
-        } else if (err.response?.data?.message) {
-          errorMessage = err.response.data.message;
-        }
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Kategoriler verilerini işle - aktif kategoriler
+    const categoriesData =
+      categoriesResponse.data?.data ||
+      categoriesResponse.data?.items ||
+      categoriesResponse.data ||
+      [];
+    
+    console.log("✅ Aktif kategoriler yüklendi:", categoriesData);
+    setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+
+  } catch (err: any) {
+    console.error("❌ Homepage veri yükleme genel hatası:", err);
+    let errorMessage = "Veriler yüklenirken bir hata oluştu.";
+    
+    if (err.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED")) {
+      errorMessage = "Backend sunucusuna bağlanılamıyor.";
+    } else if (err.code === "ERR_NETWORK") {
+      errorMessage = "Ağ bağlantısı hatası.";
+    } else if (err.response?.status === 404) {
+      errorMessage = "API endpoint'i bulunamadı.";
+    } else if (err.response?.status === 500) {
+      errorMessage = "Sunucu hatası oluştu.";
+    }
+    
+    setError(errorMessage);
+    
+    // Hata durumunda da boş array'ler set et
+    setRecentPosts([]);
+    setPopularPosts([]);
+    setCategories([]);
+    setSliderPosts([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
     loadHomepageData();
   }, []);
